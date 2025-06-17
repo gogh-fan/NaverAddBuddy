@@ -42,7 +42,6 @@ def crawl_blog_ids(page: Page, keyword: str, start_page: int, end_page: int) -> 
     added_buddy_filename = f'addedBuddy.csv'
     try:
         existing_df = pd.read_csv(added_buddy_filename, header=None)
-        print(f"이미 서이추한 블로그 ID {len(existing_ids)}개 확인됨")
     except FileNotFoundError:
         print("이미 서이추한 블로그 ID 파일이 없습니다. addedBuddy.csv파일을 새로 생성합니다.")
         existing_df = pd.DataFrame(columns=[0])
@@ -54,6 +53,7 @@ def crawl_blog_ids(page: Page, keyword: str, start_page: int, end_page: int) -> 
     try:
         # 새로운 ID만 필터링 (기존 ID와 중복되지 않는 것만)
         existing_ids = set(existing_df[0].astype(str).tolist())
+        print(f"이미 서이추한 블로그 ID {len(existing_ids)}개 확인됨")
         new_ids = [id for id in current_id_list if id not in existing_ids]
         print(f"새로 추가될 ID: {len(new_ids)}개")
 

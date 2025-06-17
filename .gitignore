@@ -1,3 +1,6 @@
+naver_blogId_*.csv
+addedBuddy.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
