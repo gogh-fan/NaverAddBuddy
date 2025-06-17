@@ -12,7 +12,8 @@ MESSAGE_FOR_BUDDY = '안녕하세요, 자주소통하면서 서로이웃추가 �
 
 def naver_login(page):
     try:
-    # 로그인
+        # 로그인
+        print("네이버 로그인 시도중...")
         page.goto("https://nid.naver.com/nidlogin.login?mode=form&url=https://www.naver.com/")
         load_dotenv()
         page.wait_for_load_state("domcontentloaded")
