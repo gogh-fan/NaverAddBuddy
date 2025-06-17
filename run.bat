@@ -17,3 +17,5 @@ if %ERRORLEVEL% NEQ 0 (
     echo urlCrawling.py가 성공적으로 실행되었습니다. addBuddy.py를 실행합니다.
     python.exe addBuddy.py "%keyword%"
 )
+
+pause

@@ -1,16 +1,42 @@
+import os
 import time
+import sys
 import pandas as pd
 from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 
 # --- 사용자 설정 ---
 # 서로이웃추가 시 보낼 메시지
-MESSAGE_FOR_BUDDY = '안녕하세요, 게시물 잘 보았습니다. 자주소통하면서 서로이웃추가 요청드려요!' 
+MESSAGE_FOR_BUDDY = '안녕하세요, 자주소통하면서 서로이웃추가 요청드려요!' 
 # --- 사용자 설정 끝 ---
+
+def naver_login(page):
+    try:
+    # 로그인
+        page.goto("https://nid.naver.com/nidlogin.login?mode=form&url=https://www.naver.com/")
+        load_dotenv()
+        page.wait_for_load_state("domcontentloaded")
+        page.locator('input[name="id"]').fill(os.getenv('ID'))
+        time.sleep(1)
+        page.locator('input[name="pw"]').fill(os.getenv('PW'))
+        time.sleep(1)
+        page.locator('button[type="submit"]').click()
+        page.wait_for_url("https://www.naver.com/")
+        
+        if page.url == "https://www.naver.com/":
+            print("네이버 로그인 성공")
+        else:
+            print("네이버 로그인 실패")
+            sys.exit(1)
+    except Exception as e:
+        print(f"네이버 로그인 중 오류 발생: {e}")
+        sys.exit(1)
 
 def add_buddy_to_blogs(page, blog_ids: list, message: str):
     """크롤링된 블로그 ID 목록을 순회하며 서로이웃추가를 시도합니다."""
     print("서로이웃추가 시작...")
     clicked_count = 0
+    added_buddy_filename = 'addedBuddy.csv'
     
     for blog_id in blog_ids:
         try:
@@ -27,7 +53,7 @@ def add_buddy_to_blogs(page, blog_ids: list, message: str):
             both_buddy_radio = page.locator('#bothBuddyRadio')
             is_both_buddy_radio_enabled = both_buddy_radio.is_enabled()
 
-            # 조건 검사 (원래 Selenium 코드의 로직 번역)
+            # 조건 검사
             conditions_met = (
                 is_both_buddy_radio_enabled and
                 "제한된" not in exceptional_text and
@@ -49,6 +75,10 @@ def add_buddy_to_blogs(page, blog_ids: list, message: str):
                 page.wait_for_load_state("networkidle") # 버튼 클릭 후 페이지 변화 대기
                 print(f"    [{blog_id}] 서로이웃추가 요청 완료.")
                 clicked_count += 1
+
+                # addedBuddy.csv에 유저ID 추가
+                df = pd.DataFrame([blog_id])
+                df.to_csv(added_buddy_filename, mode='a', header=False, index=False)
             else:
                 print(f"    [{blog_id}] 서로이웃추가 불가 (조건 미충족 또는 이미 이웃): {exceptional_text}")
 
@@ -62,6 +92,10 @@ def add_buddy_to_blogs(page, blog_ids: list, message: str):
             
             time.sleep(2) # 오류 발생 시 더 길게 대기
             pass # 다음 ID로 진행
+
+    added_buddy = pd.read_csv(added_buddy_filename, header=None)
+    added_buddy.drop_duplicates(subset=[0], inplace=True)
+    added_buddy.to_csv(added_buddy_filename, index=False, header=False)
 
     print(f"총 {clicked_count}개의 서로이웃추가 요청을 보냈습니다.")
 
@@ -91,11 +125,12 @@ def main():
         return
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False) # 테스트 시엔 False, 실제 사용 시 True (기본값)
+        browser = p.chromium.launch(headless=True) # 테스트 시엔 False, 실제 사용 시 True (기본값)
         page = browser.new_page()
 
         try:
             if blog_ids_from_csv:
+                naver_login(page)
                 add_buddy_to_blogs(page, blog_ids_from_csv, MESSAGE_FOR_BUDDY)
             else:
                 print("CSV 파일에 블로그 ID가 없어 서로이웃추가를 진행하지 않습니다.")
